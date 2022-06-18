@@ -11,11 +11,10 @@ def build_author(p, n):
 
 def main():
   if len(sys.argv) != 2:
-    print(f'...')
-    sys.exit(-1)  
+    print(f'Usage: python3 {sys.argv[0]} <paper:pdf>')
+    sys.exit(-1)
 
   file = sys.argv[1]
-
   obj = open(file, 'rb')
   reader = PyPDF2.PdfFileReader(obj)
   num_pages = reader.numPages
@@ -23,8 +22,9 @@ def main():
 
   def fetch_page(index):
     import os
-    os.system(f'gs -sDEVICE=txtwrite -dFirstPage={index} -dLastPage={index} -o output.txt 3514221.3526121.pdf >/dev/null 2>&1')
+    os.system(f'gs -sDEVICE=txtwrite -dFirstPage={index} -dLastPage={index} -o output.txt {file} >/dev/null 2>&1')
     lines = open("output.txt", "r", encoding="latin1").readlines()
+    os.system(f'[ -e output.txt ] && rm output.txt')
     return lines
 
   references = extract_references_from_file(file)
@@ -42,12 +42,18 @@ def main():
   for i in range(1, num_pages + 1):
     print(f'Page: {i}')
     lines = fetch_page(i)
+    prev_line = None
     for line in lines:
       for index, engine in enumerate(myengines):
         if engine.search(line):
           if myengine.search(line):
             continue
-          print(f'{myrefs[index]} -> line={line}')
+          if prev_line is not None:
+            print(f'{myrefs[index]} -> line={prev_line.strip()} {line.strip()}')
+          else:
+            print(f'{myrefs[index]} -> line={line.strip()}')
+            
+      prev_line = line
 
 if __name__ == '__main__':
   main()
